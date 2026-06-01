@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Globe, Calendar, Clock, BookOpen, Award, MessageCircle, Star, Sparkles, User, CheckCircle2 } from 'lucide-react';
 
@@ -45,11 +45,13 @@ const t = {
       name: 'Họ và tên của bạn',
       contactId: 'Số WhatsApp hoặc WeChat ID',
       day: 'Chọn ngày học',
-      time: 'Khung giờ mong muốn bắt đầu',
-      sat: 'Thứ Bảy (Khả dụng: 6:00 - 16:00)',
-      sun: 'Chủ Nhật (Khả dụng: 7:00 - 16:00)',
+      time: 'Khung giờ mong muốn',
+      sat: 'Thứ Bảy (Khả dụng: 6:00 - 16:00 GMT+7)',
+      sun: 'Chủ Nhật (Khả dụng: 7:00 - 16:00 GMT+7)',
       submit: 'Gửi Đăng Ký Lịch Học',
-      success: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư đến. Email xác nhận sẽ được gửi từ yulin71312@gmail.com sớm nhất!'
+      success: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư đến. Email xác nhận sẽ được gửi từ yulin71312@gmail.com sớm nhất!',
+      localTime: 'Giờ địa phương',
+      latestSlot: 'Ca cuối'
     },
     footer: { text: 'Bản quyền thuộc về Mandarin with Yulin.' }
   },
@@ -93,10 +95,12 @@ const t = {
       contactId: 'WhatsApp Number or WeChat ID',
       day: 'Preferred Day',
       time: 'Preferred Start Time',
-      sat: 'Saturday (Available: 6:00 - 16:00)',
-      sun: 'Sunday (Available: 7:00 - 16:00)',
+      sat: 'Saturday (Available: 6:00 - 16:00 GMT+7)',
+      sun: 'Sunday (Available: 7:00 - 16:00 GMT+7)',
       submit: 'Submit Booking Request',
-      success: 'Booking request sent! Please check your inbox. A confirmation email will arrive shortly from yulin71312@gmail.com.'
+      success: 'Booking request sent! Please check your inbox. A confirmation email will arrive shortly from yulin71312@gmail.com.',
+      localTime: 'Local',
+      latestSlot: 'Latest slot'
     },
     footer: { text: '© Mandarin with Yulin. All rights reserved.' }
   },
@@ -140,10 +144,12 @@ const t = {
       contactId: 'WhatsApp 号码 或 微信 ID',
       day: '选择上课日期',
       time: '期望上课开始时间段',
-      sat: '星期六 (可选时间: 6:00 - 16:00)',
-      sun: '星期日 (可选时间: 7:00 - 16:00)',
+      sat: '星期六 (可选时间: 6:00 - 16:00 GMT+7)',
+      sun: '星期日 (可选时间: 7:00 - 16:00 GMT+7)',
       submit: '提交预约申请',
-      success: '预约成功！请检查您的邮箱。确认邮件将由 yulin71312@gmail.com 发出。'
+      success: '预约成功！请检查您的邮箱。确认邮件将由 yulin71312@gmail.com 发出。',
+      localTime: '当地时间',
+      latestSlot: '最后时段'
     },
     footer: { text: '© 跟玉玲学中文 版权所有' }
   }
@@ -159,10 +165,12 @@ const imageAlts = {
 export default function LandingPage() {
   const router = useRouter();
   const params = useParams();
+  
+  // Isolate client rendering to prevent hydration mismatch on dynamic timezones
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
 
-  // Safely extract the language parameter
   const lang = (params?.lang as 'vi' | 'en' | 'zh') || 'vi';
-
   const [activeChar, setActiveChar] = useState(0);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const currentText = t[lang];
@@ -170,8 +178,51 @@ export default function LandingPage() {
   // Form states
   const [name, setName] = useState('');
   const [contactId, setContactId] = useState('');
-  const [selectedDay, setSelectedDay] = useState('sat');
-  const [selectedTime, setSelectedTime] = useState('09:00');
+  const [selectedDay, setSelectedDay] = useState<'sat'|'sun'>('sat');
+  const [selectedTime, setSelectedTime] = useState('SAT 06:00 AM GMT+7'); // Updated to reflect full structured payload value
+
+  // --- DYNAMIC TIMEZONE GENERATOR ---
+  // Calculates GMT+7 slots and seamlessly converts them to the user's localized browser time
+  const generateTimeOptions = (day: 'sat' | 'sun') => {
+    const options = [];
+    const startHour = day === 'sat' ? 6 : 7;
+    const endHour = 15;
+
+    for (let h = startHour; h <= endHour; h++) {
+      for (let m = 0; m <= 30; m += 30) {
+        if (h === endHour && m > 0) continue; // Cut off cleanly at 15:00
+
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
+        const timeGmt7 = `${displayH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
+
+        let label = `${timeGmt7} GMT+7`;
+
+        if (isClient) {
+          // Setup a fixed reference weekend (Jan 6th was Sat, Jan 7th was Sun in 2024) to safely capture any day-shifts
+          const baseDate = day === 'sat' ? 6 : 7;
+          // Calculate UTC offset for GMT+7: subtract 7 hours from the local slot
+          const refDate = new Date(Date.UTC(2024, 0, baseDate, h - 7, m, 0));
+
+          // Allow the browser to naturally format the localized time based on its own OS settings
+          const localDay = refDate.toLocaleDateString(undefined, { weekday: 'short' });
+          const localTime = refDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+          label = `${timeGmt7} GMT+7 (${currentText.booking.localTime}: ${localDay}, ${localTime})`;
+        }
+
+        if (h === endHour && m === 0) {
+          label += ` - ${currentText.booking.latestSlot}`;
+        }
+
+        // Output pure data in the payload so Yulin receives an easily readable standardized format
+        options.push({ value: `${day.toUpperCase()} ${timeGmt7} GMT+7`, label });
+      }
+    }
+    return options;
+  };
+
+  const timeOptions = generateTimeOptions(selectedDay);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -437,7 +488,7 @@ export default function LandingPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <button
                     type="button"
-                    onClick={() => { setSelectedDay('sat'); setSelectedTime('06:00'); }}
+                    onClick={() => { setSelectedDay('sat'); setSelectedTime('SAT 06:00 AM GMT+7'); }}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${selectedDay === 'sat' ? 'border-indigo-600 bg-indigo-50/40 text-indigo-900 font-bold' : 'border-slate-200 text-slate-600 font-medium'}`}
                   >
                     <Calendar className="w-5 h-5 mb-1" />
@@ -445,7 +496,7 @@ export default function LandingPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setSelectedDay('sun'); setSelectedTime('07:00'); }}
+                    onClick={() => { setSelectedDay('sun'); setSelectedTime('SUN 07:00 AM GMT+7'); }}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${selectedDay === 'sun' ? 'border-indigo-600 bg-indigo-50/40 text-indigo-900 font-bold' : 'border-slate-200 text-slate-600 font-medium'}`}
                   >
                     <Calendar className="w-5 h-5 mb-1" />
@@ -464,49 +515,11 @@ export default function LandingPage() {
                   onChange={(e) => setSelectedTime(e.target.value)}
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
                 >
-                  {selectedDay === 'sat' ? (
-                    <>
-                      <option value="06:00">06:00 AM</option>
-                      <option value="06:30">06:30 AM</option>
-                      <option value="07:00">07:00 AM</option>
-                      <option value="07:30">07:30 AM</option>
-                      <option value="08:00">08:00 AM</option>
-                      <option value="08:30">08:30 AM</option>
-                      <option value="09:00">09:00 AM</option>
-                      <option value="09:30">09:30 AM</option>
-                      <option value="10:00">10:00 AM</option>
-                      <option value="10:30">10:30 AM</option>
-                      <option value="11:00">11:00 AM</option>
-                      <option value="11:30">11:30 AM</option>
-                      <option value="12:00">12:00 PM</option>
-                      <option value="12:30">12:30 PM</option>
-                      <option value="13:00">13:00 PM</option>
-                      <option value="13:30">13:30 PM</option>
-                      <option value="14:00">14:00 PM</option>
-                      <option value="14:30">14:30 PM</option>
-                      <option value="15:00">15:00 PM (Latest full session)</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="07:00">07:00 AM</option>
-                      <option value="07:30">07:30 AM</option>
-                      <option value="08:00">08:00 AM</option>
-                      <option value="08:30">08:30 AM</option>
-                      <option value="09:00">09:00 AM</option>
-                      <option value="09:30">09:30 AM</option>
-                      <option value="10:00">10:00 AM</option>
-                      <option value="10:30">10:30 AM</option>
-                      <option value="11:00">11:00 AM</option>
-                      <option value="11:30">11:30 AM</option>
-                      <option value="12:00">12:00 PM</option>
-                      <option value="12:30">12:30 PM</option>
-                      <option value="13:00">13:00 PM</option>
-                      <option value="13:30">13:30 PM</option>
-                      <option value="14:00">14:00 PM</option>
-                      <option value="14:30">14:30 PM</option>
-                      <option value="15:00">15:00 PM (Latest full session)</option>
-                    </>
-                  )}
+                  {timeOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
