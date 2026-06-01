@@ -29,8 +29,13 @@ const seoData = {
 };
 
 // Dynamically generate Meta Tags based on the URL parameter (/vi, /en, /zh)
-export function generateMetadata({ params }: { params: { lang: string } }): Metadata {
-  const lang = (params.lang as keyof typeof seoData) || 'vi';
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: Promise<{ lang: string }> 
+}): Promise<Metadata> {
+  const resolvedParams = await params;
+  const lang = (resolvedParams.lang as keyof typeof seoData) || 'vi';
   const meta = seoData[lang];
 
   return {
@@ -51,16 +56,18 @@ export function generateStaticParams() {
   return [{ lang: 'vi' }, { lang: 'en' }, { lang: 'zh' }];
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
   params,
 }: Readonly<{
   children: React.ReactNode;
-  params: { lang: string };
+  params: Promise<{ lang: string }>;
 }>) {
+  const resolvedParams = await params;
+  
   return (
     <html
-      lang={params.lang}
+      lang={resolvedParams.lang}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
