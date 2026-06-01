@@ -536,7 +536,7 @@ export default function LandingPage() {
                 <MessageCircle className="w-6 h-6" />
               </div>
               <span className="text-sm font-semibold text-white">WeChat</span>
-              <span className="text-xs text-slate-600 font-medium">yulin71312</span>
+              <span className="text-xs text-slate-600 font-medium">mumula265</span>
             </div>
           </div>
           <div className="border-t border-slate-900 pt-8 max-w-md mx-auto">
