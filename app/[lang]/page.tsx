@@ -51,7 +51,8 @@ const t = {
       submit: 'Gửi Đăng Ký Lịch Học',
       success: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư đến. Email xác nhận sẽ được gửi từ yulin71312@gmail.com sớm nhất!',
       localTime: 'Giờ địa phương',
-      latestSlot: 'Ca cuối'
+      latestSlot: 'Ca cuối',
+      copied: 'Đã sao chép!'
     },
     footer: { text: 'Bản quyền thuộc về Mandarin with Yulin.' }
   },
@@ -100,7 +101,8 @@ const t = {
       submit: 'Submit Booking Request',
       success: 'Booking request sent! Please check your inbox. A confirmation email will arrive shortly from yulin71312@gmail.com.',
       localTime: 'Local',
-      latestSlot: 'Latest slot'
+      latestSlot: 'Latest slot',
+      copied: 'Copied!'
     },
     footer: { text: '© Mandarin with Yulin. All rights reserved.' }
   },
@@ -132,7 +134,7 @@ const t = {
     testimonials: {
       title: '学员评价',
       reviews: [
-        { name: 'Sarah J.', text: '玉玲老师的英语授课让我更容易理解声调。一对一的专注正是我需要的！' },
+        { name: 'Sarah J.', text: '玉玲老师的英语授课让我更容易理解声调。一对一的专注正戏需要的！' },
         { name: 'Minh T.', text: '上课时间非常灵活，适合上班族。北大的教材也很系统。' },
         { name: 'David L.', text: '六月活动赠送的 Chineasy 书籍非常棒，强烈推荐！' },
       ]
@@ -149,7 +151,8 @@ const t = {
       submit: '提交预约申请',
       success: '预约成功！请检查您的邮箱。确认邮件将由 yulin71312@gmail.com 发出。',
       localTime: '当地时间',
-      latestSlot: '最后时段'
+      latestSlot: '最后时段',
+      copied: '已复制!'
     },
     footer: { text: '© 跟玉玲学中文 版权所有' }
   }
@@ -168,6 +171,8 @@ export default function LandingPage() {
   
   // Isolate client rendering to prevent hydration mismatch on dynamic timezones
   const [isClient, setIsClient] = useState(false);
+  const [wechatCopied, setWechatCopied] = useState(false);
+  
   useEffect(() => { setIsClient(true); }, []);
 
   const lang = (params?.lang as 'vi' | 'en' | 'zh') || 'vi';
@@ -179,10 +184,9 @@ export default function LandingPage() {
   const [name, setName] = useState('');
   const [contactId, setContactId] = useState('');
   const [selectedDay, setSelectedDay] = useState<'sat'|'sun'>('sat');
-  const [selectedTime, setSelectedTime] = useState('SAT 06:00 AM GMT+7'); // Updated to reflect full structured payload value
+  const [selectedTime, setSelectedTime] = useState('SAT 06:00 AM GMT+7');
 
   // --- DYNAMIC TIMEZONE GENERATOR ---
-  // Calculates GMT+7 slots and seamlessly converts them to the user's localized browser time
   const generateTimeOptions = (day: 'sat' | 'sun') => {
     const options = [];
     const startHour = day === 'sat' ? 6 : 7;
@@ -190,7 +194,7 @@ export default function LandingPage() {
 
     for (let h = startHour; h <= endHour; h++) {
       for (let m = 0; m <= 30; m += 30) {
-        if (h === endHour && m > 0) continue; // Cut off cleanly at 15:00
+        if (h === endHour && m > 0) continue;
 
         const ampm = h >= 12 ? 'PM' : 'AM';
         const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
@@ -199,12 +203,9 @@ export default function LandingPage() {
         let label = `${timeGmt7} GMT+7`;
 
         if (isClient) {
-          // Setup a fixed reference weekend (Jan 6th was Sat, Jan 7th was Sun in 2024) to safely capture any day-shifts
           const baseDate = day === 'sat' ? 6 : 7;
-          // Calculate UTC offset for GMT+7: subtract 7 hours from the local slot
           const refDate = new Date(Date.UTC(2024, 0, baseDate, h - 7, m, 0));
 
-          // Allow the browser to naturally format the localized time based on its own OS settings
           const localDay = refDate.toLocaleDateString(undefined, { weekday: 'short' });
           const localTime = refDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
@@ -215,7 +216,6 @@ export default function LandingPage() {
           label += ` - ${currentText.booking.latestSlot}`;
         }
 
-        // Output pure data in the payload so Yulin receives an easily readable standardized format
         options.push({ value: `${day.toUpperCase()} ${timeGmt7} GMT+7`, label });
       }
     }
@@ -223,6 +223,14 @@ export default function LandingPage() {
   };
 
   const timeOptions = generateTimeOptions(selectedDay);
+
+  const handleWeChatCopy = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText('mumula265');
+      setWechatCopied(true);
+      setTimeout(() => setWechatCopied(false), 2000);
+    }
+  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -550,20 +558,35 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <h3 className="text-white text-base font-black tracking-widest uppercase mb-8">{currentText.nav.contact}</h3>
           <div className="flex justify-center space-x-12 mb-10">
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 bg-slate-900 hover:bg-slate-800 transition-colors border border-slate-800 rounded-2xl flex items-center justify-center text-green-500 mb-2">
+            
+            {/* WHATSAPP CLICKABLE ROUTE LINK */}
+            <a 
+              href="https://wa.me/642041192164"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center group transition-transform duration-300 hover:scale-105"
+            >
+              <div className="w-12 h-12 bg-slate-900 group-hover:bg-slate-800 transition-colors border border-slate-800 group-hover:border-slate-700 rounded-2xl flex items-center justify-center text-green-500 mb-2 shadow-lg">
                 <MessageCircle className="w-6 h-6" />
               </div>
-              <span className="text-sm font-semibold text-white">WhatsApp</span>
-              <span className="text-xs text-slate-600 font-medium">+64 20 4119 2164</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 bg-slate-900 hover:bg-slate-800 transition-colors border border-slate-800 rounded-2xl flex items-center justify-center text-emerald-400 mb-2">
+              <span className="text-sm font-semibold text-white group-hover:text-green-400 transition-colors">WhatsApp</span>
+              <span className="text-xs text-slate-600 font-medium group-hover:text-slate-400 transition-colors">+64 20 4119 2164</span>
+            </a>
+            
+            {/* WECHAT CLIENT-SIDE CLICK TO COPY BUTTON */}
+            <button 
+              onClick={handleWeChatCopy}
+              className="flex flex-col items-center group focus:outline-none transition-transform duration-300 hover:scale-105"
+            >
+              <div className="w-12 h-12 bg-slate-900 group-hover:bg-slate-800 transition-colors border border-slate-800 group-hover:border-slate-700 rounded-2xl flex items-center justify-center text-emerald-400 mb-2 shadow-lg">
                 <MessageCircle className="w-6 h-6" />
               </div>
-              <span className="text-sm font-semibold text-white">WeChat</span>
-              <span className="text-xs text-slate-600 font-medium">mumula265</span>
-            </div>
+              <span className="text-sm font-semibold text-white group-hover:text-emerald-400 transition-colors">WeChat</span>
+              <span className={`text-xs font-medium transition-colors ${wechatCopied ? 'text-emerald-400 font-bold animate-pulse' : 'text-slate-600 group-hover:text-slate-400'}`}>
+                {wechatCopied ? currentText.booking.copied : 'mumula265'}
+              </span>
+            </button>
+
           </div>
           <div className="border-t border-slate-900 pt-8 max-w-md mx-auto">
             <p className="text-xs text-slate-600 font-medium">{currentText.footer.text}</p>
