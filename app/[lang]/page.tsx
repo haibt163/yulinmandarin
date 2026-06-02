@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 import { Globe, Calendar, Clock, BookOpen, Award, MessageCircle, Star, Sparkles, User, CheckCircle2 } from 'lucide-react';
 
 // --- TRANSLATION DICTIONARY ---
@@ -173,7 +174,10 @@ export default function LandingPage() {
   const [isClient, setIsClient] = useState(false);
   const [wechatCopied, setWechatCopied] = useState(false);
   
-  useEffect(() => { setIsClient(true); }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsClient(true);
+  }, []);
 
   const lang = (params?.lang as 'vi' | 'en' | 'zh') || 'vi';
   const [activeChar, setActiveChar] = useState(0);
@@ -304,9 +308,12 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto text-center flex flex-col items-center">
           <div className="relative mb-8 group">
             <div className="absolute inset-0 bg-indigo-500 rounded-full blur-2xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
-            <img 
+            <Image 
               src="/photo_2026-06-01_10-59-34.png" 
               alt={imageAlts[lang]} 
+              width={176}
+              height={176}
+              priority
               className="w-44 h-44 object-cover rounded-full shadow-xl border-4 border-white relative z-10 transition-transform duration-500 group-hover:scale-[1.02]"
             />
             <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-xl shadow-lg z-20">
@@ -355,15 +362,21 @@ export default function LandingPage() {
             
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">✓</div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Clock className="w-5 h-5" />
+                </div>
                 <p className="text-sm font-semibold text-slate-700">{currentText.details.time}</p>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">★</div>
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Star className="w-5 h-5 fill-current" />
+                </div>
                 <p className="text-sm font-semibold text-slate-700">{currentText.details.fee}</p>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">📖</div>
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5" />
+                </div>
                 <p className="text-sm font-semibold text-slate-700">{currentText.details.curriculum}</p>
               </div>
             </div>
@@ -436,7 +449,7 @@ export default function LandingPage() {
                 <div className="flex text-amber-400 mb-4 group-hover:scale-105 transition-transform">
                   {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
                 </div>
-                <p className="text-slate-600 mb-6 italic font-medium leading-relaxed">"{review.text}"</p>
+                <p className="text-slate-600 mb-6 italic font-medium leading-relaxed">&ldquo;{review.text}&rdquo;</p>
                 <p className="font-bold text-slate-900 flex items-center gap-2">
                   <span className="w-6 h-0.5 bg-indigo-600 inline-block"></span>
                   {review.name}
