@@ -5,6 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { Globe, Calendar, Clock, BookOpen, Award, MessageCircle, Star, Sparkles, User, CheckCircle2 } from 'lucide-react';
 
+// --- ENVIRONMENT CONFIGURATION ---
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'yulin71312@gmail.com';
+const FORMSPREE_KEY = process.env.NEXT_PUBLIC_FORMSPREE_KEY || 'mbdbvovv';
+
 // --- TRANSLATION DICTIONARY ---
 const t = {
   vi: {
@@ -50,7 +54,7 @@ const t = {
       sat: 'Thứ Bảy (Khả dụng: 6:00 - 16:00 GMT+7)',
       sun: 'Chủ Nhật (Khả dụng: 7:00 - 16:00 GMT+7)',
       submit: 'Gửi Đăng Ký Lịch Học',
-      success: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư đến. Email xác nhận sẽ được gửi từ yulin71312@gmail.com sớm nhất!',
+      success: `Đăng ký thành công! Vui lòng kiểm tra hộp thư đến. Email xác nhận sẽ được gửi từ ${CONTACT_EMAIL} sớm nhất!`,
       localTime: 'Giờ địa phương',
       latestSlot: 'Ca cuối',
       copied: 'Đã sao chép!'
@@ -100,7 +104,7 @@ const t = {
       sat: 'Saturday (Available: 6:00 - 16:00 GMT+7)',
       sun: 'Sunday (Available: 7:00 - 16:00 GMT+7)',
       submit: 'Submit Booking Request',
-      success: 'Booking request sent! Please check your inbox. A confirmation email will arrive shortly from yulin71312@gmail.com.',
+      success: `Booking request sent! Please check your inbox. A confirmation email will arrive shortly from ${CONTACT_EMAIL}.`,
       localTime: 'Local',
       latestSlot: 'Latest slot',
       copied: 'Copied!'
@@ -150,7 +154,7 @@ const t = {
       sat: '星期六 (可选时间: 6:00 - 16:00 GMT+7)',
       sun: '星期日 (可选时间: 7:00 - 16:00 GMT+7)',
       submit: '提交预约申请',
-      success: '预约成功！请检查您的邮箱。确认邮件将由 yulin71312@gmail.com 发出。',
+      success: `预约成功！请检查您的邮箱。确认邮件将由 ${CONTACT_EMAIL} 发出。`,
       localTime: '当地时间',
       latestSlot: '最后时段',
       copied: '已复制!'
@@ -244,11 +248,11 @@ export default function LandingPage() {
       contact: contactId,
       day: selectedDay === 'sat' ? 'Saturday' : 'Sunday',
       time: selectedTime,
-      _replyto: 'yulin71312@gmail.com'
+      _replyto: CONTACT_EMAIL
     };
 
     try {
-      const response = await fetch('https://formspree.io/f/mbdbvovv', {
+      const response = await fetch(`https://formspree.io/f/${FORMSPREE_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
